@@ -1,3 +1,13 @@
+# obj folder
+obj/*.o
+
+# various files
+.clang_complete
+src/.clang_complete
+
+# bin folder
+bin/*
+
 # Object files
 *.o
 *.ko
