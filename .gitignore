@@ -1,12 +1,14 @@
-# obj folder
-obj/*.o
-
 # various files
 .clang_complete
 src/.clang_complete
 
+# obj folder
+obj/*
+!obj/.tmp
+
 # bin folder
 bin/*
+!bin/.tmp
 
 # Object files
 *.o
