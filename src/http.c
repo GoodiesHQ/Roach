@@ -10,7 +10,7 @@ url_t * url_create(const char *uri)
     memset(url, 0x00, sizeof(url_t));
 
     uriSize = strlen(uri);
-    uriStr = (char*)malloc(uriSize + 1);
+    uriStr = (char*)calloc(1, uriSize + 1);
     strncpy(uriStr, uri, uriSize);
 
     // Determine the protocol
