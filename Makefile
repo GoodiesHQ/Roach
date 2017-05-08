@@ -23,7 +23,7 @@ RM			= rm -f
 all:		$(OBJFILES) $(BINDIR)/$(TARGET)
 
 debug:		CFLAGS += -DDEBUG -ggdb
-debug:		$(OBJFILES) $(BINDIR)/$(TARGET)
+debug:		all
 
 $(BINDIR)/$(TARGET): $(OBJFILES)
 	@$(LD) $(OBJFILES) $(LFLAGS) -o $@
