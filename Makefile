@@ -30,4 +30,3 @@ $(OBJFILES): $(OBJDIR)/%.o : $(SRCDIR)/%.c
 clean:
 	@$(RM) $(OBJFILES)
 	@$(RM) $(BINDIR)/$(TARGET)
-

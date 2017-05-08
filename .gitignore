@@ -1,6 +1,8 @@
 # various files
 .clang_complete
+.clang
 src/.clang_complete
+src/.clang
 
 # obj folder
 obj/*

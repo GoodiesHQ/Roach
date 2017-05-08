@@ -1,4 +1,4 @@
-#include "../inc/roach/roach.h"
+#include "../inc/roach.h"
 
 int main(int argc, char **argv)
 {

@@ -1,12 +1,6 @@
-#ifndef ROACH_H
-#define ROACH_H
+#ifndef ROACH_ROACH_H
+#define ROACH_ROACH_H
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/mman.h>
-#include <sys/socket.h>
-#include <sys/types.h>
-#include <unistd.h>
+#include "./roach/http.h"
 
-#endif//ROACH_H
+#endif//ROACH_ROACH_H
