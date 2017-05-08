@@ -20,10 +20,10 @@ CFLAGS		:= -std=c11 -Wall -I$(INCDIR)
 CFLAGS		:= -Wall -I$(INCDIR)
 RM			= rm -f
 
-all:		$(OBJFILES)
+all:		$(OBJFILES) $(BINDIR)/$(TARGET)
 
 debug:		CFLAGS += -DDEBUG -ggdb
-debug:		$(OBJFILES)
+debug:		$(OBJFILES) $(BINDIR)/$(TARGET)
 
 $(BINDIR)/$(TARGET): $(OBJFILES)
 	@$(LD) $(OBJFILES) $(LFLAGS) -o $@
