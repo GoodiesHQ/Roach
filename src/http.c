@@ -6,8 +6,7 @@ url_t * url_create(const char *uri)
     size_t uriSize, tokenSize, protoSize;
     char *uriStr, *token, *tokenPtr, *tokenHost, *tokenPtrHost, *tmp;
 
-    url_t *url = (url_t*)malloc(sizeof(url_t));
-    memset(url, 0x00, sizeof(url_t));
+    url_t *url = (url_t*)calloc(1, sizeof(url_t));
 
     uriSize = strlen(uri);
     uriStr = (char*)calloc(1, uriSize + 1);
@@ -34,7 +33,8 @@ url_t * url_create(const char *uri)
         tokenSize = strlen(token);
         tokenHost = (char*)malloc(tokenSize + 1);
         strncpy(tokenHost, token, tokenSize);
-    } else
+    }
+    else
     {
         url_destroy(&url);
         return NULL;
@@ -46,7 +46,8 @@ url_t * url_create(const char *uri)
         tokenSize = strlen(token);
         url->host = (char*)malloc(tokenSize + 1);
         strncpy(url->host, token, tokenSize);
-    } else 
+    }
+    else 
     {
         free(tokenHost);
         url_destroy(&url);
@@ -57,7 +58,9 @@ url_t * url_create(const char *uri)
     if((token = strtok_r(NULL, ":", &tokenPtrHost)) == NULL)
     {
         url->port = DEFAULT_HTTP_PORT;
-    } else {
+    }
+    else
+    {
         url->port = strtol(token, &tmp, 10);
         if(*tmp)
         {
@@ -67,14 +70,16 @@ url_t * url_create(const char *uri)
             return NULL;
         }
     }
-    debugf("Port: %d\n", url->port);
+    debugf("Port: %" PRIu16 "\n", url->port);
 
     if((token = strtok_r(NULL, "?", &tokenPtr)) == NULL)
     {
         // There is no more to parse. Use default HTTP path.
         url->path = (char*)calloc(1, 2);
         strcpy(url->path, "/");
-    } else {
+    }
+    else
+    {
         tokenSize = strlen(token);
         url->path = (char*)calloc(1, tokenSize + 2);
         strcpy(url->path, "/");
@@ -87,7 +92,9 @@ url_t * url_create(const char *uri)
         // There is no more to parse. Use empty HTTP query.
         url->query = (char*)calloc(1, 1);
         strncpy(url->query, "", 1);
-    } else {
+    }
+    else
+    {
         tokenSize = strlen(token);
         url->query = (char*)calloc(1, tokenSize + 1);
         strncpy(url->query, token, tokenSize);

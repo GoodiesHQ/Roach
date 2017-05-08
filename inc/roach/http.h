@@ -3,12 +3,13 @@
 
 #include "./common.h"
 
-#include <string.h>
+#include <inttypes.h>
 #include <stdatomic.h>
-#include <unistd.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
+#include <unistd.h>
 
 #define BUFSIZE_URL_PATH    1024
 #define HTTP_PROTO          "http"
@@ -19,7 +20,7 @@ typedef struct _url_t
 {
     char *proto;        // only http is supported
     char *host;         // the fqdn of the host
-    short port;         // the port on which the HTTP server is running
+    uint16_t port;      // the port on which the HTTP server is running
     char *path;         // the path to acquire the file
     char *query;        //
     char *addr;         // ip address
