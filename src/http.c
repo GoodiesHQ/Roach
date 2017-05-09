@@ -1,5 +1,52 @@
 #include "../inc/roach/http.h"
 
+
+char * url_to_string(const url_t *url)
+{
+    const char * const *parts = (const char * const *)url;
+    size_t sizes[URL_PCHAR_CNT], pfxlen;
+    
+    size_t total = 0, i;
+
+    total += strlen(POSTFIX_PROTO);
+    total += strlen(POSTFIX_PATH);
+
+    for(i = 0; i < URL_PCHAR_CNT; ++i)
+    {
+        printf("Part %lu: %s\n", i, parts[i] ? parts[i] : "Pointer is Null");
+        sizes[i] = strlen(parts[i]);
+        total += sizes[i];
+    }
+
+    char *final = calloc(1, total);
+    char *ptr = final;
+
+    printf("OK\n");
+
+    for(i = 0; i < URL_PCHAR_CNT; ++i)
+    {
+        strncpy(ptr, parts[i], sizes[i]);
+        ptr += sizes[i];
+        switch(i)
+        {
+            case INDEX_PROTO:
+                pfxlen = strlen(POSTFIX_PROTO);
+                strncpy(ptr, POSTFIX_PROTO, pfxlen);
+                ptr += pfxlen;
+                break;
+            case INDEX_PATH:
+                pfxlen = strlen(POSTFIX_PATH);
+                strncpy(ptr, POSTFIX_PATH, pfxlen);
+                ptr += pfxlen;
+                break;
+            default:
+                break;
+        }
+    }
+    debugf("URL: %s\n", final);
+    return final;
+}
+
 // A likely very buggy URL parser, but functional for my purposes
 url_t * url_create(const char *uri)
 {
@@ -20,6 +67,7 @@ url_t * url_create(const char *uri)
     if(strcmp(token, HTTP_PROTO) != 0)
     {
         debugf("Protocol '%s' is not supported\n", token);
+        free(uriStr);
         url_destroy(&url);
         return NULL;
     }
@@ -36,6 +84,7 @@ url_t * url_create(const char *uri)
     }
     else
     {
+        free(uriStr);
         url_destroy(&url);
         return NULL;
     }
@@ -66,6 +115,7 @@ url_t * url_create(const char *uri)
         {
             debugf("FAILURE: port is invalid: '%s'\n", token);
             free(tokenHost);
+            free(uriStr);
             url_destroy(&url);
             return NULL;
         }
@@ -91,7 +141,7 @@ url_t * url_create(const char *uri)
     {
         // There is no more to parse. Use empty HTTP query.
         url->query = (char*)calloc(1, 1);
-        strncpy(url->query, "", 1);
+        //strncpy(url->query, "", 1); // necessary? I think not.
     }
     else
     {
@@ -101,6 +151,8 @@ url_t * url_create(const char *uri)
     }
     debugf("Query: %s\n", url->query);
 
+    free(tokenHost);
+    free(uriStr);
     return url;
 }
 
