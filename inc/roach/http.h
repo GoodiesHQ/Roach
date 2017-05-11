@@ -13,27 +13,32 @@
 
 #define BUFSIZE_URL_PATH    1024
 #define HTTP_PROTO          "http"
-#define DEFAULT_HTTP_PORT   80
+#define DEFAULT_HTTP_PORT   "80"
 #define TIMEOUT             10
-#define URL_PCHAR_CNT       4   // number of char* vars in the url_t struct
 
 #define POSTFIX_PROTO       "://"
+#define POSTFIX_HOST        ":"
 #define POSTFIX_PATH        "?"
 
 #define INDEX_PROTO         0
 #define INDEX_HOST          1
-#define INDEX_PATH          2
-#define INDEX_QUERY         3
-#define INDEX_ADDR          4
+#define INDEX_PORT          2
+#define INDEX_PATH          3
+#define INDEX_QUERY         4
+#define INDEX_ADDR          5
+
+typedef struct _url_t url_t;
+#define URL_T_SIZE          sizeof(url_t) / sizeof(char*)
+#define URL_T_PARTS_EXCLUDE 1
 
 typedef struct _url_t
 {
     char *proto;        // only http is supported
     char *host;         // the fqdn of the host
+    char *port;         // string representation of the port
     char *path;         // the path to acquire the file
     char *query;        // the query string
     char *addr;         // ip address
-    uint16_t port;      // the port on which the HTTP server is running
 } url_t;
 
 typedef enum _connstate_t

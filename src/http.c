@@ -4,14 +4,15 @@
 char * url_to_string(const url_t *url)
 {
     const char * const *parts = (const char * const *)url;
-    size_t sizes[URL_PCHAR_CNT], pfxlen;
+    const size_t difference = URL_T_SIZE - URL_T_PARTS_EXCLUDE;
+    size_t sizes[difference], pfxlen;
     
     size_t total = 0, i;
 
     total += strlen(POSTFIX_PROTO);
     total += strlen(POSTFIX_PATH);
 
-    for(i = 0; i < URL_PCHAR_CNT; ++i)
+    for(i = 0; i < difference; ++i)
     {
         printf("Part %lu: %s\n", i, parts[i] ? parts[i] : "Pointer is Null");
         sizes[i] = strlen(parts[i]);
@@ -21,9 +22,7 @@ char * url_to_string(const url_t *url)
     char *final = calloc(1, total);
     char *ptr = final;
 
-    printf("OK\n");
-
-    for(i = 0; i < URL_PCHAR_CNT; ++i)
+    for(i = 0; i < difference; ++i)
     {
         strncpy(ptr, parts[i], sizes[i]);
         ptr += sizes[i];
@@ -32,16 +31,21 @@ char * url_to_string(const url_t *url)
             case INDEX_PROTO:
                 pfxlen = strlen(POSTFIX_PROTO);
                 strncpy(ptr, POSTFIX_PROTO, pfxlen);
-                ptr += pfxlen;
+                break;
+            case INDEX_HOST:
+                printf("LOL %s LOL\n", POSTFIX_HOST);
+                pfxlen = strlen(POSTFIX_HOST);
+                strncpy(ptr, POSTFIX_HOST, pfxlen);
                 break;
             case INDEX_PATH:
                 pfxlen = strlen(POSTFIX_PATH);
                 strncpy(ptr, POSTFIX_PATH, pfxlen);
-                ptr += pfxlen;
                 break;
             default:
+                pfxlen = 0;
                 break;
         }
+        ptr += pfxlen;
     }
     debugf("URL: %s\n", final);
     return final;
@@ -106,11 +110,13 @@ url_t * url_create(const char *uri)
 
     if((token = strtok_r(NULL, ":", &tokenPtrHost)) == NULL)
     {
-        url->port = DEFAULT_HTTP_PORT;
+        tokenSize = strlen(DEFAULT_HTTP_PORT);
+        url->port = malloc(tokenSize + 1);
+        strncpy(url->port, DEFAULT_HTTP_PORT, tokenSize);
     }
     else
     {
-        url->port = strtol(token, &tmp, 10);
+        /*unsigned short port = */ strtol(token, &tmp, 10);
         if(*tmp)
         {
             debugf("FAILURE: port is invalid: '%s'\n", token);
@@ -119,8 +125,11 @@ url_t * url_create(const char *uri)
             url_destroy(&url);
             return NULL;
         }
+        tokenSize = strlen(token);
+        url->port = malloc(tokenSize + 1);
+        strncpy(url->port, token, tokenSize);
     }
-    debugf("Port: %" PRIu16 "\n", url->port);
+    debugf("Port: %s\n", url->port);
 
     if((token = strtok_r(NULL, "?", &tokenPtr)) == NULL)
     {
@@ -159,13 +168,14 @@ url_t * url_create(const char *uri)
 void url_destroy(url_t **urlPtr)
 {
     url_t *url = *urlPtr;
+    char **parts = (char**)url;
+    size_t i;
     if(url)
     {
-        free(url->proto);
-        free(url->host);
-        free(url->path);
-        free(url->query);
-        free(url->addr);
+        for(i = 0; i < URL_T_SIZE; ++i)
+        {
+            free(parts[i]);
+        }
         free(url);
     }
 }
