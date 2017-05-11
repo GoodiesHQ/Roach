@@ -12,8 +12,10 @@ status_t doit(const char *uri)
 
     http_client_t *client = http_client_create();
     http_client_set_url(client, purl);
+
     if(http_init_connection(client) == FAILURE)
     {
+        debugf("%s\n", "Connection Failed!");
         http_client_destroy(&client);
         url_destroy(&purl);
         return FAILURE;

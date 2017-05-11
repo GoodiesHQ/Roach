@@ -6,7 +6,7 @@ http_client_t *http_client_create(void)
     http_client_t *client = (http_client_t*)calloc(1, sizeof(http_client_t));
     client->hints = (struct addrinfo*)calloc(1, sizeof(struct addrinfo));
     client->hints->ai_family = AF_UNSPEC;
-    client->hints->ai_socktype = SOCK_DGRAM;
+    client->hints->ai_socktype = SOCK_STREAM;
     client->complete = ATOMIC_VAR_INIT(false);
     return client;
 }
@@ -19,14 +19,13 @@ void http_client_destroy(http_client_t **clientPtr)
         debugf("%s\n", "Releasing addrinfo");
         freeaddrinfo(client->res);
     }
-    free(client->hints);
     if(client->url)
     {
         debugf("%s\n", "Releasing client url");
         url_destroy(&client->url);
     }
+    free(client->hints);
     free(client);
-    //*clientPtr = NULL;
 }
 
 void http_client_set_url(http_client_t *client, const url_t *url)
@@ -86,7 +85,11 @@ status_t http_init_connection(http_client_t *client)
 
 status_t http_connect(http_client_t *client)
 {
-    //char *ipstr = NULL;
+    if(client->url == NULL)
+    {
+        client->connstate = CONN_NO_URL;
+        return FAILURE;
+    }
     return SUCCESS;
 }
 
@@ -254,6 +257,7 @@ url_t * url_create(const char *uri)
 
 void url_destroy(url_t **urlPtr)
 {
+    debugf("%s\n", "Freeing URL");
     url_t *url = *urlPtr;
     char **parts = (char**)url;
     size_t i;
