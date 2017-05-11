@@ -2,11 +2,22 @@
 
 int doit(const char *uri)
 {
-    url_t *url = url_create(uri);
-    char *str = url_to_string((const url_t*)url);
+    url_t url, *purl = &url;
+    url_create_ptr(&purl, uri);
+
+    if(!purl)
+    {
+        fprintf(stderr, "Invalid URL\n");
+        return -1;
+    }
+
+    http_client_t *client = http_client_create();
+    http_client_set_url(client, &url);
+
+    char *str = url_to_string((const url_t*)client->url);
     printf("%s\n", str);
     free(str);
-    url_destroy(&url);
+    http_client_destroy(&client);
     return 1;
 }
 

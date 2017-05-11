@@ -1,6 +1,38 @@
 #include "../inc/roach/http.h"
 
 
+http_client_t *http_client_create(void)
+{
+    http_client_t *client = (http_client_t*)calloc(1, sizeof(http_client_t));
+    client->hints = (struct addrinfo*)calloc(1, sizeof(struct addrinfo));
+    client->complete = ATOMIC_VAR_INIT(false);
+    return client;
+}
+
+void http_client_destroy(http_client_t **clientPtr)
+{
+    http_client_t *client = *clientPtr;
+    free(client->hints);
+    url_destroy(&client->url);
+    free(*clientPtr);
+}
+
+void http_client_set_url(http_client_t *client, const url_t *url)
+{
+    client->url = calloc(1, sizeof(url_t));
+    memmove((void*)client->url, (const void*)url, sizeof(url_t));
+}
+
+status_t http_init_connection(http_client_t *client)
+{
+    if(client->url == NULL)
+    {
+        client->connstate = CONN_NO_URL;
+        return FAILURE;
+    }
+    return SUCCESS;
+}
+
 char * url_to_string(const url_t *url)
 {
     const char * const *parts = (const char * const *)url;
@@ -149,7 +181,6 @@ url_t * url_create(const char *uri)
     {
         // There is no more to parse. Use empty HTTP query.
         url->query = (char*)calloc(1, 1);
-        //strncpy(url->query, "", 1); // necessary? I think not.
     }
     else
     {
@@ -162,6 +193,19 @@ url_t * url_create(const char *uri)
     free(tokenHost);
     free(uriStr);
     return url;
+}
+
+
+void url_create_ptr(url_t **url, const char *uri)
+{
+    url_t *tmp;
+    if((tmp = url_create(uri)) == NULL)
+    {
+        *url = NULL;
+        return;
+    }
+    memmove(*url, tmp, sizeof(url_t));
+    free(tmp);
 }
 
 void url_destroy(url_t **urlPtr)
