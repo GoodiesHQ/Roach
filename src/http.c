@@ -33,7 +33,6 @@ char * url_to_string(const url_t *url)
                 strncpy(ptr, POSTFIX_PROTO, pfxlen);
                 break;
             case INDEX_HOST:
-                printf("LOL %s LOL\n", POSTFIX_HOST);
                 pfxlen = strlen(POSTFIX_HOST);
                 strncpy(ptr, POSTFIX_HOST, pfxlen);
                 break;
