@@ -1,10 +1,99 @@
 #include "../inc/roach/http.h"
 
 
+http_client_t *http_client_create(void)
+{
+    http_client_t *client = (http_client_t*)calloc(1, sizeof(http_client_t));
+    client->hints = (struct addrinfo*)calloc(1, sizeof(struct addrinfo));
+    client->hints->ai_family = AF_UNSPEC;
+    client->hints->ai_socktype = SOCK_DGRAM;
+    client->complete = ATOMIC_VAR_INIT(false);
+    return client;
+}
+
+void http_client_destroy(http_client_t **clientPtr)
+{
+    http_client_t *client = *clientPtr;
+    if(client->res)
+    {
+        debugf("%s\n", "Releasing addrinfo");
+        freeaddrinfo(client->res);
+    }
+    free(client->hints);
+    if(client->url)
+    {
+        debugf("%s\n", "Releasing client url");
+        url_destroy(&client->url);
+    }
+    free(client);
+    //*clientPtr = NULL;
+}
+
+void http_client_set_url(http_client_t *client, const url_t *url)
+{
+    if(client->url)
+    {
+        url_destroy(&client->url);
+    }
+    size_t i, len;
+    char **copy;
+    const char * const * orig = (const char * const *)url;
+
+    if(client->url)
+    {
+        debugf("%s\n", "URL Already Exists");
+    }
+    client->url = calloc(1, sizeof(url_t));
+    copy = (char**)client->url;
+    for(i = 0; i < URL_T_PARTS_COUNT; ++i)
+    {
+        if(orig[i] == NULL)
+        {
+            copy[i] = NULL;
+            continue;
+        }
+        len = strlen(orig[i]);
+        copy[i] = calloc(1, len + 1);
+        memmove(copy[i], orig[i], len);
+    }
+}
+
+status_t http_init_connection(http_client_t *client)
+{
+    int gai_err;
+    if(client->url == NULL)
+    {
+        client->connstate = CONN_NO_URL;
+        debugf("%s\n", "Cannot create connection without a URL");
+        return FAILURE;
+    }
+    if((gai_err = getaddrinfo(client->url->host, NULL, client->hints, &client->res)) != 0)
+    {
+        debugf("GetAddrInfo() Error(%d): %s\n", gai_err, gai_strerror(gai_err));
+        freeaddrinfo(client->res);
+        client->res = NULL;
+        switch(gai_err)
+        {
+            case EAI_NONAME:
+                client->connstate = CONN_NXDOMAIN;
+                break;
+        }
+        return FAILURE;
+    }
+    client->connstate = CONN_INIT;
+    return SUCCESS;
+}
+
+status_t http_connect(http_client_t *client)
+{
+    //char *ipstr = NULL;
+    return SUCCESS;
+}
+
 char * url_to_string(const url_t *url)
 {
     const char * const *parts = (const char * const *)url;
-    const size_t difference = URL_T_SIZE - URL_T_PARTS_EXCLUDE;
+    const size_t difference = URL_T_PARTS_COUNT - URL_T_PARTS_EXCLUDE;
     size_t sizes[difference], pfxlen;
     
     size_t total = 0, i;
@@ -91,7 +180,6 @@ url_t * url_create(const char *uri)
         url_destroy(&url);
         return NULL;
     }
-    debugf("Host_Port: %s\n", tokenHost);
 
     if((token = strtok_r(tokenHost, ":", &tokenPtrHost)) != NULL)
     {
@@ -110,7 +198,7 @@ url_t * url_create(const char *uri)
     if((token = strtok_r(NULL, ":", &tokenPtrHost)) == NULL)
     {
         tokenSize = strlen(DEFAULT_HTTP_PORT);
-        url->port = malloc(tokenSize + 1);
+        url->port = calloc(1, tokenSize + 1);
         strncpy(url->port, DEFAULT_HTTP_PORT, tokenSize);
     }
     else
@@ -125,7 +213,7 @@ url_t * url_create(const char *uri)
             return NULL;
         }
         tokenSize = strlen(token);
-        url->port = malloc(tokenSize + 1);
+        url->port = calloc(1, tokenSize + 1);
         strncpy(url->port, token, tokenSize);
     }
     debugf("Port: %s\n", url->port);
@@ -149,7 +237,6 @@ url_t * url_create(const char *uri)
     {
         // There is no more to parse. Use empty HTTP query.
         url->query = (char*)calloc(1, 1);
-        //strncpy(url->query, "", 1); // necessary? I think not.
     }
     else
     {
@@ -164,6 +251,7 @@ url_t * url_create(const char *uri)
     return url;
 }
 
+
 void url_destroy(url_t **urlPtr)
 {
     url_t *url = *urlPtr;
@@ -171,7 +259,7 @@ void url_destroy(url_t **urlPtr)
     size_t i;
     if(url)
     {
-        for(i = 0; i < URL_T_SIZE; ++i)
+        for(i = 0; i < URL_T_PARTS_COUNT; ++i)
         {
             free(parts[i]);
         }

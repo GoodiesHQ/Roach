@@ -12,4 +12,10 @@
 #define STR_(x) #x
 #define STR(x) STR_(x)
 
+typedef enum _status_t
+{
+    SUCCESS,
+    FAILURE,
+} status_t;
+
 #endif//ROACH_COMMON_H

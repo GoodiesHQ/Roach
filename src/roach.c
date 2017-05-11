@@ -1,17 +1,30 @@
 #include "../inc/roach.h"
 
-int doit(const char *uri)
+status_t doit(const char *uri)
 {
-    url_t *url = url_create(uri);
-    char *str = url_to_string((const url_t*)url);
-    printf("%s\n", str);
-    free(str);
-    url_destroy(&url);
-    return 1;
+    url_t *purl = url_create(uri);
+
+    if(!purl)
+    {
+        fprintf(stderr, "Invalid URL\n");
+        return -1;
+    }
+
+    http_client_t *client = http_client_create();
+    http_client_set_url(client, purl);
+    if(http_init_connection(client) == FAILURE)
+    {
+        http_client_destroy(&client);
+        url_destroy(&purl);
+        return FAILURE;
+    }
+    http_client_destroy(&client);
+    url_destroy(&purl);
+    return SUCCESS;
 }
 
 int main(int argc, char **argv)
 {
-    doit("http://some.domain.com:8080/lol.out?arch=x64");
+    doit("http://google.com/");
     return 0;
 }

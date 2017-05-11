@@ -3,6 +3,7 @@
 .clang
 src/.clang_complete
 src/.clang
+heaptrack*gz
 
 # obj folder
 obj/*
