@@ -8,6 +8,7 @@ http_client_t *http_client_create(void)
     client->hints->ai_family = AF_UNSPEC;
     client->hints->ai_socktype = SOCK_STREAM;
     client->complete = ATOMIC_VAR_INIT(false);
+    client->fd = DEFAULT_SOCKET_FD;
     return client;
 }
 
@@ -26,6 +27,29 @@ void http_client_destroy(http_client_t **clientPtr)
     }
     free(client->hints);
     free(client);
+}
+
+const char *http_state_str(connstate_t state)
+{
+    switch(state)
+    {
+        case CONN_INIT:
+            return "Domain is valid and the client is initialized and ready to connect";
+        case CONN_SUCCESS:
+            return "The connection has connected successfully.";
+        case CONN_NO_URL:
+            return "No URL has been provided.";
+        case CONN_REFUSED:
+            return "The target has refused the connection.";
+        case CONN_TIMEOUT:
+            return "The connection has timed out.";
+        case CONN_NXDOMAIN:
+            return "The specified domain does not exist.";
+        case CONN_IN_USE:
+            return "The connection is already in use.";
+        default:
+            return "Invalid State";
+    }
 }
 
 void http_client_set_url(http_client_t *client, const url_t *url)

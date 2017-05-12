@@ -2,6 +2,8 @@
 
 status_t doit(const char *uri)
 {
+    status_t status = SUCCESS;
+
     url_t *purl = url_create(uri);
 
     if(!purl)
@@ -16,17 +18,21 @@ status_t doit(const char *uri)
     if(http_init_connection(client) == FAILURE)
     {
         debugf("%s\n", "Connection Failed!");
-        http_client_destroy(&client);
-        url_destroy(&purl);
-        return FAILURE;
+        status = FAILURE;
+        goto cleanup;
     }
+    
+    // other stuff
+
+cleanup:
     http_client_destroy(&client);
     url_destroy(&purl);
-    return SUCCESS;
+    return status;
 }
 
 int main(int argc, char **argv)
 {
-    doit("http://google.com/");
+    doit("http://httpbin.org/ip");
     return 0;
 }
+
