@@ -19,6 +19,8 @@
 
 #define BUFSIZE_URL_PATH    1024
 #define HTTP_PROTO          "http"
+#define HTTP_VER            "1.1"
+#define HTTP_UA             "roach/" ROACH_VERSION
 #define DEFAULT_HTTP_PORT   "80"
 #ifndef TIMEOUT
 #define TIMEOUT             1
@@ -61,6 +63,7 @@ void http_client_set_url(http_client_t *client, const url_t *url);
 status_t http_init_connection(http_client_t *client);
 status_t http_connect(http_client_t *client);
 
+buffer_t *http_get_buffer(http_client_t *client);
 http_response_t *http_get(http_client_t *client);
 
 #endif//ROACH_HTTP_H

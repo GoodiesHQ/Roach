@@ -7,7 +7,7 @@
 #include <string.h>
 
 #ifndef BUFFER_CHUNK
-#define BUFFER_CHUNK 1024
+#define BUFFER_CHUNK 256
 #endif
 
 typedef struct _buffer_t
@@ -17,8 +17,9 @@ typedef struct _buffer_t
 } buffer_t;
 
 buffer_t *buffer_create(void);
-void buffer_append(buffer_t *buf, const void *data, size_t size);
-void buffer_append_str(buffer_t *buf, const char *str);
+char *buffer_to_str(buffer_t *buf);
+status_t buffer_append(buffer_t *buf, const void *data, size_t size);
+status_t buffer_append_str(buffer_t *buf, const char *str);
 void buffer_destroy(buffer_t **bufferPtr);
 
 #endif//ROACH_BUFFER_H

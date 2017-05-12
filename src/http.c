@@ -190,18 +190,89 @@ status_t http_connect(http_client_t *client)
     }
 }
 
-http_response_t *http_get(http_client_t *client)
+buffer_t *http_get_buffer(http_client_t *client)
 {
     buffer_t *buf = buffer_create();
     buffer_append_str(buf, "GET ");
     buffer_append_str(buf, client->url->path);
-    buffer_append_str(buf, " HTTP/1.1\r\nHost: ");
+    buffer_append_str(buf, " HTTP/" HTTP_VER "\r\nHost: ");
     buffer_append_str(buf, client->url->host);
-    buffer_append_str(buf, "\r\nConnection: close\r\nUser-Agent: roach/1.0\r\n\r\n");
+    buffer_append_str(buf, "\r\nConnection: close\r\nUser-Agent: " HTTP_UA "\r\n\r\n");
+    return buf;
+}
 
-    printf("Buffer:\n%s", buf->data);
+status_t http_send_buffer(http_client_t *client, buffer_t *buf)
+{
+    ssize_t sent = 0, sentTotal = 0;
+    while(sentTotal < buf->used)
+    {
+        if((sent = send(client->fd, buf->data + sentTotal, buf->used - sentTotal, 0)) == -1)
+        {
+            debugf("%s\n", "Could not send buffer.");
+            return FAILURE;
+        }
+        debugf("SUCCESS: sent %zd bytes\n", sent);
+        sentTotal += sent;
+    }
+    return SUCCESS;
+}
 
-    buffer_destroy(&buf);
+status_t http_recv_buffer(http_client_t *client, buffer_t *buf)
+{
+    ssize_t received = 0, receivedTotal = 0;
+    char tmp[BUFFER_CHUNK];
+
+    while(true)
+    {
+        received = recv(client->fd, tmp, BUFFER_CHUNK, 0);
+        if(received < 0)
+        {
+            debugf("FAILURE: recv() = %zd\n", received);
+            return FAILURE;
+        }
+        if(received == 0)
+        {
+            debugf("%s\n", "Receive Complete");
+            break;
+        }
+
+        debugf("recv() received %zd bytes\n", received);
+        receivedTotal += received;
+        if(buffer_append(buf, tmp, received) == FAILURE)
+        {
+            return FAILURE;
+        }
+    }
+
+    return SUCCESS;
+}
+
+http_response_t *http_get(http_client_t *client)
+{
+    buffer_t *req = http_get_buffer(client), *res = buffer_create();
+    if(!req)
+    {
+        debugf("%s\n", "GET buffer failed to be created");
+        return NULL;
+    }
+
+    if(http_send_buffer(client, req) == FAILURE)
+    {
+        client->connstate = CONN_FAILURE;
+        goto fail;
+    }
+
+    if(http_recv_buffer(client, res) == FAILURE)
+    {
+        client->connstate = CONN_FAILURE;
+        goto fail;
+    }
+
+    write(1, res->data, res->used);
+
+fail:
+    buffer_destroy(&req);
+    buffer_destroy(&res);
     return NULL;
 }
 
