@@ -54,6 +54,8 @@ const char *http_state_str(connstate_t state)
             return "The specified domain does not exist.";
         case CONN_IN_USE:
             return "The connection is already in use.";
+        case CONN_FAILURE:
+            return "An unspecified error has occured.";
         default:
             return "Invalid State";
     }
