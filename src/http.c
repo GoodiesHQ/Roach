@@ -195,12 +195,12 @@ http_response_t *http_get(http_client_t *client)
     buffer_t *buf = buffer_create();
     buffer_append_str(buf, "GET ");
     buffer_append_str(buf, client->url->path);
-    buffer_append_str(buf, " HTTP/1.1\r\n");
-    buffer_append_str(buf, "Host: ");
+    buffer_append_str(buf, " HTTP/1.1\r\nHost: ");
     buffer_append_str(buf, client->url->host);
     buffer_append_str(buf, "\r\nConnection: close\r\nUser-Agent: roach/1.0\r\n\r\n");
 
-    printf("%s", buf->data);
+    printf("Buffer:\n%s", buf->data);
+
     buffer_destroy(&buf);
     return NULL;
 }
