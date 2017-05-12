@@ -25,6 +25,13 @@ void http_client_destroy(http_client_t **clientPtr)
         debugf("%s\n", "Releasing client url");
         url_destroy(&client->url);
     }
+    if(client->fd != DEFAULT_SOCKET_FD)
+    {
+        if(fcntl(client->fd, F_GETFL) < 0 && errno == EBADF)
+        {
+            close(client->fd);
+        }
+    }
     free(client->hints);
     free(client);
 }
@@ -90,7 +97,7 @@ status_t http_init_connection(http_client_t *client)
         debugf("%s\n", "Cannot create connection without a URL");
         return FAILURE;
     }
-    if((gai_err = getaddrinfo(client->url->host, NULL, client->hints, &client->res)) != 0)
+    if((gai_err = getaddrinfo(client->url->host, client->url->port, client->hints, &client->res)) != 0)
     {
         debugf("GetAddrInfo() Error(%d): %s\n", gai_err, gai_strerror(gai_err));
         freeaddrinfo(client->res);
@@ -100,6 +107,8 @@ status_t http_init_connection(http_client_t *client)
             case EAI_NONAME:
                 client->connstate = CONN_NXDOMAIN;
                 break;
+            default:
+                client->connstate = CONN_FAILURE;
         }
         return FAILURE;
     }
@@ -109,12 +118,74 @@ status_t http_init_connection(http_client_t *client)
 
 status_t http_connect(http_client_t *client)
 {
+    int sockfd, i;
+    struct addrinfo *iter;
+    struct timeval timeout;
+    timeout.tv_sec = TIMEOUT;
+    timeout.tv_usec = 0;
+
+    // No URL has been set
     if(client->url == NULL)
     {
         client->connstate = CONN_NO_URL;
         return FAILURE;
     }
-    return SUCCESS;
+
+    // Connection is not in INIT state
+    if(client->connstate != CONN_INIT)
+    {
+        debugf("%s\n", "HTTP client is not in the initialized state");
+        return FAILURE;
+    }
+
+    // Iterate over the results from the previous getaddrinfo output
+    for(iter = client->res, i = 1; iter != NULL; iter=iter->ai_next, ++i)
+    {
+        // Create a socket. If this goes awry, there are bigger issues
+        if((sockfd = socket(iter->ai_family, iter->ai_socktype, iter->ai_protocol)) == -1)
+        {
+            debugf("Try #%d: %s\n", i, "Creating the socket failed");
+            client->connstate = CONN_FAILURE;
+            continue;
+        }
+        debugf("SUCCESS: %s\n", "Socket Created");
+
+        // Set the send and recv timeout for the socket
+        if(setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char*)&timeout, sizeof(timeout)) < 0)
+        {
+            debugf("Try #%d: %s\n", i, "Socket SND Timeout Failed");
+            continue;
+        }
+
+        if(setsockopt(sockfd, SOL_SOCKET, SO_RCVTIMEO, (char*)&timeout, sizeof(timeout)) < 0)
+        {
+            debugf("Try #%d: %s\n", i, "Socket RCV Timeout Failed");
+            continue;
+        }
+
+        // Establish a connection
+        if(connect(sockfd, iter->ai_addr, iter->ai_addrlen) == -1)
+        {
+            debugf("Try #%d: %s\n", i,"Connecting to the socket failed");
+            client->connstate = CONN_FAILURE;
+            continue;
+        }
+
+        debugf("SUCCESS: %s\n", "Connection Created");
+
+        client->connstate = CONN_SUCCESS;
+        break;
+    }
+
+    switch(client->connstate)
+    {
+        case CONN_SUCCESS:
+            client->fd = sockfd;
+            return SUCCESS;
+        default:
+            debugf("%s\n", "No valid connections could be formed");
+            return FAILURE;
+    }
 }
 
 char * url_to_string(const url_t *url)
@@ -230,7 +301,7 @@ url_t * url_create(const char *uri)
     }
     else
     {
-        /*unsigned short port = */ strtol(token, &tmp, 10);
+        strtol(token, &tmp, 10);
         if(*tmp)
         {
             debugf("FAILURE: port is invalid: '%s'\n", token);

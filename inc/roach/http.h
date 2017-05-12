@@ -4,6 +4,8 @@
 #include "./common.h"
 
 #include <arpa/inet.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <inttypes.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -19,7 +21,7 @@
 #define HTTP_PROTO          "http"
 #define DEFAULT_HTTP_PORT   "80"
 #ifndef TIMEOUT
-#define TIMEOUT             10
+#define TIMEOUT             1
 #endif
 #define DEFAULT_SOCKET_FD   -1
 
@@ -52,13 +54,13 @@ typedef enum _connstate_t
 {
     CONN_INIT,          // connection is ready to be started
     CONN_SUCCESS,       // connection is successful
-
     // Failures
     CONN_NO_URL,        // a proper url was not provided
     CONN_REFUSED,       // the target refused the connection
     CONN_TIMEOUT,       // the connection exceeded the timeout
     CONN_NXDOMAIN,      // the specified domain does not exist
     CONN_IN_USE,        // the client has an unclosed file descriptor
+    CONN_FAILURE,
 } connstate_t;
 
 

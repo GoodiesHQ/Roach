@@ -17,12 +17,17 @@ status_t doit(const char *uri)
 
     if(http_init_connection(client) == FAILURE)
     {
-        debugf("%s\n", "Connection Failed!");
+        debugf("%s\n", "Initializing Connection Failed!");
         status = FAILURE;
         goto cleanup;
     }
     
-    // other stuff
+    if(http_connect(client) == FAILURE)
+    {
+        debugf("%s\n", "Connection Failed");
+        status = FAILURE;
+        goto cleanup;
+    }
 
 cleanup:
     http_client_destroy(&client);
