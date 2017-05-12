@@ -2,6 +2,8 @@
 #define ROACH_HTTP_H
 
 #include "./common.h"
+#include "./url.h"
+#include "./buffer.h"
 
 #include <arpa/inet.h>
 #include <errno.h>
@@ -11,8 +13,6 @@
 #include <netinet/in.h>
 #include <stdatomic.h>
 #include <stdbool.h>
-#include <stdlib.h>
-#include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -24,31 +24,6 @@
 #define TIMEOUT             1
 #endif
 #define DEFAULT_SOCKET_FD   -1
-
-#define POSTFIX_PROTO       "://"
-#define POSTFIX_HOST        ":"
-#define POSTFIX_PATH        "?"
-
-#define INDEX_PROTO         0
-#define INDEX_HOST          1
-#define INDEX_PORT          2
-#define INDEX_PATH          3
-#define INDEX_QUERY         4
-#define INDEX_ADDR          5
-
-typedef struct _url_t url_t;
-#define URL_T_PARTS_COUNT   sizeof(url_t) / sizeof(char*)
-#define URL_T_PARTS_EXCLUDE 1
-
-typedef struct _url_t
-{
-    char *proto;        // only http is supported
-    char *host;         // the fqdn of the host
-    char *port;         // string representation of the port
-    char *path;         // the path to acquire the file
-    char *query;        // the query string
-    char *addr;         // ip address
-} url_t;
 
 typedef enum _connstate_t
 {
@@ -63,7 +38,6 @@ typedef enum _connstate_t
     CONN_FAILURE,
 } connstate_t;
 
-
 typedef struct _http_client_t
 {
     url_t *url;
@@ -73,6 +47,12 @@ typedef struct _http_client_t
     atomic_bool complete;
 } http_client_t;
 
+typedef struct _http_response_t
+{
+    unsigned status_code;
+    buffer_t *buf;
+} http_response_t;
+
 http_client_t *http_client_create(void);
 void http_client_destroy(http_client_t **clientPtr);
 const char *http_state_str(connstate_t state);
@@ -81,8 +61,6 @@ void http_client_set_url(http_client_t *client, const url_t *url);
 status_t http_init_connection(http_client_t *client);
 status_t http_connect(http_client_t *client);
 
-char * url_to_string(const url_t *url);
-url_t * url_create(const char *uri);
-void url_destroy(url_t **urlPtr);
+http_response_t *http_get(http_client_t *client);
 
 #endif//ROACH_HTTP_H

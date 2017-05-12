@@ -11,6 +11,7 @@
 
 #define STR_(x) #x
 #define STR(x) STR_(x)
+#define ALIGN(V, B) V >= 0 ? ((V + B - 1) / B) * B : (V / B) * B
 
 typedef enum _status_t
 {

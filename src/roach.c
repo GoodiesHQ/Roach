@@ -29,6 +29,8 @@ status_t doit(const char *uri)
         goto cleanup;
     }
 
+    http_get(client);
+
 cleanup:
     http_client_destroy(&client);
     url_destroy(&purl);
@@ -40,4 +42,3 @@ int main(int argc, char **argv)
     doit("http://httpbin.org/ip");
     return 0;
 }
-
