@@ -16,19 +16,21 @@ CC			= gcc
 LD			= gcc
 SRCFILES	:= $(wildcard $(SRCDIR)/*.c)
 OBJFILES	:= $(SRCFILES:$(SRCDIR)/%.c=$(OBJDIR)/%.o)
-CFLAGS		:= -std=c11 -Wall -I$(INCDIR)
-CFLAGS		:= -Wall -I$(INCDIR)
+CFLAGS		:= -std=c11 -Wall -I$(INCDIR) -lpthread
+LFLAGS		:= -Wall -I$(INCDIR) -lpthread
 RM			= rm -f
 
 all:		$(OBJFILES) $(BINDIR)/$(TARGET)
 
-debug:		CFLAGS += -DDEBUG -ggdb
+debug:		CFLAGS := -DDEBUG
+debug:		CFLAGS += -ggdb
 debug:		all
 
 $(BINDIR)/$(TARGET): $(OBJFILES)
 	@$(LD) $(OBJFILES) $(LFLAGS) -o $@
 
 $(OBJFILES): $(OBJDIR)/%.o : $(SRCDIR)/%.c
+	echo ${CFLAGS}
 	@$(CC) $(CFLAGS) -c $< -o $@
 
 .PHONY:		clean

@@ -13,25 +13,21 @@ status_t doit(const char *uri)
     }
 
     http_client_t *client = http_client_create();
-    http_client_set_url(client, purl);
-
-    if(http_init_connection(client) == FAILURE)
+    if(http_client_setattr(client, HTTP_ATTR_URL, purl) == SUCCESS)
     {
-        debugf("%s\n", "Initializing Connection Failed!");
-        status = FAILURE;
-        goto cleanup;
-    }
-    
-    if(http_connect(client) == FAILURE)
-    {
-        debugf("%s\n", "Connection Failed");
-        status = FAILURE;
-        goto cleanup;
+        if(http_init_connection(client) == SUCCESS)
+        {
+            if(http_connect(client) == SUCCESS)
+            {
+                http_response_t response = {0x00};
+                if(http_get(client, &response) == SUCCESS)
+                {
+                    printf("Response Status: [%zd]\n", response.status_code);
+                }
+            }
+        }
     }
 
-    http_get(client);
-
-cleanup:
     http_client_destroy(&client);
     url_destroy(&purl);
     return status;
@@ -39,6 +35,6 @@ cleanup:
 
 int main(int argc, char **argv)
 {
-    doit("http://httpbin.org/ip");
+    doit("http://127.0.0.1:8000/test.txt");
     return 0;
 }

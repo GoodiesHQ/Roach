@@ -1,52 +1,78 @@
 #include "../inc/roach/url.h"
 
+status_t copy_url(url_t *dst, const url_t *src)
+{
+    size_t i, len;
+    char **target;
+    const char * const * orig;
+    orig = (const char * const *)src;
+    target = (char**)dst;
+
+    for(i = 0; i < URL_T_PARTS_COUNT; ++i)
+    {
+        if(orig[i] == NULL)
+        {
+            target[i] = NULL;
+            continue;
+        }
+
+        len = strlen(orig[i]);
+        if((target[i] = calloc(1, len + 1)) == NULL)
+        {
+            debugf(DBG_CRIT, "%s\n", "calloc() failure");
+            return FAILURE;
+        }
+        memmove(target[i], orig[i], len);
+    }
+    return SUCCESS;
+}
+
+
 char * url_to_string(const url_t *url)
 {
+    if(!url)
+    {
+        debugf(DBG_WARN, "%s\n", "url was NULL");
+        return NULL;
+    }
+    char *tmp = NULL;
+    buffer_t *buffer = buffer_create();
     const char * const *parts = (const char * const *)url;
     const size_t difference = URL_T_PARTS_COUNT - URL_T_PARTS_EXCLUDE;
-    size_t sizes[difference], pfxlen;
-    
-    size_t total = 0, i;
-
-    total += strlen(POSTFIX_PROTO);
-    total += strlen(POSTFIX_PATH);
-
+    size_t i = 0;
     for(i = 0; i < difference; ++i)
     {
-        printf("Part %lu: %s\n", i, parts[i] ? parts[i] : "Pointer is Null");
-        sizes[i] = strlen(parts[i]);
-        total += sizes[i];
-    }
-
-    char *final = calloc(1, total);
-    char *ptr = final;
-
-    for(i = 0; i < difference; ++i)
-    {
-        strncpy(ptr, parts[i], sizes[i]);
-        ptr += sizes[i];
+        tmp = NULL;
+        if(buffer_append_str(buffer, parts[i]) == FAILURE)
+        {
+            buffer_destroy(&buffer);
+            return NULL;
+        }
         switch(i)
         {
             case INDEX_PROTO:
-                pfxlen = strlen(POSTFIX_PROTO);
-                strncpy(ptr, POSTFIX_PROTO, pfxlen);
+                tmp = POSTFIX_PROTO;
                 break;
             case INDEX_HOST:
-                pfxlen = strlen(POSTFIX_HOST);
-                strncpy(ptr, POSTFIX_HOST, pfxlen);
+                tmp = POSTFIX_HOST;
                 break;
             case INDEX_PATH:
-                pfxlen = strlen(POSTFIX_PATH);
-                strncpy(ptr, POSTFIX_PATH, pfxlen);
-                break;
-            default:
-                pfxlen = 0;
+                if(strlen(parts[INDEX_QUERY]))
+                {
+                    tmp = POSTFIX_PATH;
+                }
                 break;
         }
-        ptr += pfxlen;
+        if(tmp && buffer_append_str(buffer, tmp) == FAILURE)
+        {
+            buffer_destroy(&buffer);
+            return NULL;
+        }
     }
-    debugf("URL: %s\n", final);
-    return final;
+
+    tmp = buffer_to_str(buffer);
+    buffer_destroy(&buffer);
+    return tmp;
 }
 
 // A likely very buggy URL parser, but functional for my purposes
@@ -63,12 +89,12 @@ url_t * url_create(const char *uri)
 
     // Determine the protocol
     token = strtok_r(uriStr, ":", &tokenPtr);
-    debugf("URL Protocol: %s\n", token);
+    debugf(DBG_INFO, "URL Protocol: %s\n", token);
     
     // Only HTTP is going to be supported to keep the binary small and monolithic
     if(strcmp(token, HTTP_PROTO) != 0)
     {
-        debugf("Protocol '%s' is not supported\n", token);
+        debugf(DBG_MAJOR, "Protocol '%s' is not supported\n", token);
         free(uriStr);
         url_destroy(&url);
         return NULL;
@@ -103,7 +129,7 @@ url_t * url_create(const char *uri)
         url_destroy(&url);
         return NULL;
     }
-    debugf("Host: %s\n", url->host);
+    debugf(DBG_INFO, "Host: %s\n", url->host);
 
     if((token = strtok_r(NULL, ":", &tokenPtrHost)) == NULL)
     {
@@ -116,7 +142,7 @@ url_t * url_create(const char *uri)
         strtol(token, &tmp, 10);
         if(*tmp)
         {
-            debugf("FAILURE: port is invalid: '%s'\n", token);
+            debugf(DBG_MAJOR, "'%s' is an invalid port\n", token);
             free(tokenHost);
             free(uriStr);
             url_destroy(&url);
@@ -126,7 +152,7 @@ url_t * url_create(const char *uri)
         url->port = calloc(1, tokenSize + 1);
         strncpy(url->port, token, tokenSize);
     }
-    debugf("Port: %s\n", url->port);
+    debugf(DBG_INFO, "Port: %s\n", url->port);
 
     if((token = strtok_r(NULL, "?", &tokenPtr)) == NULL)
     {
@@ -141,7 +167,7 @@ url_t * url_create(const char *uri)
         strcpy(url->path, "/");
         strcpy(url->path + 1, token);
     }
-    debugf("Path: %s\n", url->path);
+    debugf(DBG_INFO, "Path: %s\n", url->path);
 
     if((token = strtok_r(NULL, "?", &tokenPtr)) == NULL)
     {
@@ -154,8 +180,8 @@ url_t * url_create(const char *uri)
         url->query = (char*)calloc(1, tokenSize + 1);
         strncpy(url->query, token, tokenSize);
     }
-    debugf("Query: %s\n", url->query);
 
+    debugf(DBG_INFO, "Query: %s\n", url->query);
     free(tokenHost);
     free(uriStr);
     return url;
@@ -163,7 +189,7 @@ url_t * url_create(const char *uri)
 
 void url_destroy(url_t **urlPtr)
 {
-    debugf("%s\n", "Freeing URL");
+    debugf(DBG_INFO, "%s\n", "Freeing URL");
     url_t *url = *urlPtr;
     char **parts = (char**)url;
     size_t i;
