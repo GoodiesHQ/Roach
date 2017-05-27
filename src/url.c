@@ -3,10 +3,8 @@
 status_t url_copy(url_t *dst, const url_t *src)
 {
     size_t i, len;
-    char **target;
-    const char * const * orig;
-    orig = (const char * const *)src;
-    target = (char**)dst;
+    char **target = (char**)dst;
+    const char * const * orig = (const char * const *)src;
 
     for(i = 0; i < URL_T_PARTS_COUNT; ++i)
     {
@@ -35,19 +33,27 @@ char * url_to_string(const url_t *url)
         debugf(DBG_WARN, "%s\n", "url was NULL");
         return NULL;
     }
-    char *tmp = NULL;
-    buffer_t *buffer = buffer_create();
+
+    char *tmp;
+    buffer_t *buffer;
     const char * const *parts = (const char * const *)url;
     const size_t difference = URL_T_PARTS_COUNT - URL_T_PARTS_EXCLUDE;
     size_t i = 0;
+
+    if((buffer = buffer_create()) == NULL)
+    {
+        debugf(DBG_CRIT, "%s\n", "buffer was not created");
+        return NULL;
+    }
+
     for(i = 0; i < difference; ++i)
     {
-        tmp = NULL;
         if(buffer_append_str(buffer, parts[i]) == FAILURE)
         {
             buffer_destroy(&buffer);
             return NULL;
         }
+
         switch(i)
         {
             case INDEX_PROTO:
@@ -62,7 +68,10 @@ char * url_to_string(const url_t *url)
                     tmp = POSTFIX_PATH;
                 }
                 break;
+            default:
+                tmp = NULL;
         }
+
         if(tmp && buffer_append_str(buffer, tmp) == FAILURE)
         {
             buffer_destroy(&buffer);
@@ -78,14 +87,25 @@ char * url_to_string(const url_t *url)
 // A likely very buggy URL parser, but functional for my purposes
 url_t * url_create(const char *uri)
 {
-    size_t uriSize, tokenSize, protoSize;
-    char *uriStr, *token, *tokenPtr, *tokenHost, *tokenPtrHost, *tmp;
+    const size_t uriSize = strlen(uri); // length of the original URI
+    size_t tokenSize, protoSize; // string lengths
+    char *uriStr, *token, *tokenPtr, *tokenHost, *tokenPtrHost, *tmp; // tokens for parsing
+    url_t *url;
 
-    url_t *url = (url_t*)calloc(1, sizeof(url_t));
+    if((url = (url_t*)calloc(1, sizeof(url_t))) == NULL)
+    {
+        debugf(DBG_CRIT, "%s\n", "calloc() failure");
+        return NULL;
+    }
 
-    uriSize = strlen(uri);
-    uriStr = (char*)calloc(1, uriSize + 1);
-    strncpy(uriStr, uri, uriSize);
+    if((uriStr = (char*)calloc(1, uriSize + 1)) == NULL)
+    {
+        url_destroy(&url);
+        debugf(DBG_CRIT, "%s\n", "calloc() failure");
+        return NULL;
+    }
+
+    memmove(uriStr, uri, uriSize);
 
     // Determine the protocol
     token = strtok_r(uriStr, ":", &tokenPtr);
@@ -94,9 +114,9 @@ url_t * url_create(const char *uri)
     // Only HTTP is going to be supported to keep the binary small and monolithic
     if(strcmp(token, HTTP_PROTO) != 0)
     {
-        debugf(DBG_MAJOR, "Protocol '%s' is not supported\n", token);
         free(uriStr);
         url_destroy(&url);
+        debugf(DBG_MAJOR, "Protocol '%s' is not supported\n", token);
         return NULL;
     }
 
@@ -114,11 +134,13 @@ url_t * url_create(const char *uri)
     {
         free(uriStr);
         url_destroy(&url);
+        debugf(DBG_MAJOR, "%s\n", "The token was NULL.");
         return NULL;
     }
 
     if((token = strtok_r(tokenHost, ":", &tokenPtrHost)) != NULL)
     {
+        printf("LOL 1: %s\n", token);
         tokenSize = strlen(token);
         url->host = (char*)malloc(tokenSize + 1);
         strncpy(url->host, token, tokenSize);
@@ -127,8 +149,10 @@ url_t * url_create(const char *uri)
     {
         free(tokenHost);
         url_destroy(&url);
+        debugf(DBG_MAJOR, "%s\n", "The token was NULL.");
         return NULL;
     }
+
     debugf(DBG_INFO, "Host: %s\n", url->host);
 
     if((token = strtok_r(NULL, ":", &tokenPtrHost)) == NULL)
