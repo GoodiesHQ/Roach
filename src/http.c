@@ -89,25 +89,23 @@ status_t http_client_setattr(http_client_t *client, http_client_attr_t attr, ...
     {
         case HTTP_ATTR_URL:
         {
-            
             if(client->url)
             {
                 url_destroy(&client->url);
             }
 
-            const url_t *url;
-            url = va_arg(valist, const url_t*);
+            const url_t *url = va_arg(valist, const url_t*);
 
             if((client->url = calloc(1, sizeof(url_t))) == NULL)
             {
                 debugf(DBG_CRIT, "%s\n", "calloc() failure");
                 return FAILURE;
             }
-            copy_url(client->url, url);
+
+            return url_copy(client->url, url);
         }
         case HTTP_ATTR_HEADER:
         {
-
             break;
         }
         default:

@@ -1,6 +1,6 @@
 #include "../inc/roach/url.h"
 
-status_t copy_url(url_t *dst, const url_t *src)
+status_t url_copy(url_t *dst, const url_t *src)
 {
     size_t i, len;
     char **target;

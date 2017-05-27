@@ -17,8 +17,8 @@ typedef struct _buffer_t
 } buffer_t;
 
 buffer_t *buffer_create(void);
-char *buffer_to_str(buffer_t *buf);
-status_t buffer_append(buffer_t *buf, const void *data, size_t size);
+char *buffer_to_str(const buffer_t *buf);
+status_t buffer_append(buffer_t *buf, const void *data, const size_t size);
 status_t buffer_append_str(buffer_t *buf, const char *str);
 void buffer_destroy(buffer_t **bufferPtr);
 

@@ -36,7 +36,7 @@ typedef struct _url_t
     char *addr;         // ip address
 } url_t;
 
-status_t copy_url(url_t *dst, const url_t *src);
+status_t url_copy(url_t *dst, const url_t *src);
 char * url_to_string(const url_t *url);
 url_t * url_create(const char *uri);
 void url_destroy(url_t **urlPtr);
